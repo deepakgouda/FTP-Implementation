@@ -1,17 +1,19 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<sys/socket.h>
+#include<netinet/in.h>
 
 #define backlog 5
 
 int main(int argc, char const *argv[])
 {
-	printf("%d\n", argc);
-	char *serv_addr = argv[1];
-	char *serv_port = argv[2];
+	const char *serv_addr = argv[1];
+	const int serv_port = atoi(argv[2]);
+
 	char buffer[1024] = {0};
-	// printf("%s\n", serv_addr);
-	// printf("%s\n", serv_port);
+	struct sockaddr_in server;
+	int sockfd, clientSocket, addrlen = sizeof(server);
 
 	// Socket file descriptor creation
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -27,13 +29,12 @@ int main(int argc, char const *argv[])
 		exit(1);
 	}
 
-	struct sockaddr_in server;
 	server.sin_family = AF_INET;
 	server.sin_port = htons(serv_port);
-	server.in_addr.s_addr = INADDR_ANY;
+	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_family = AF_INET;
 
-	if(bind(sockfd, (struct sockaddr_in *)&server, 
+	if(bind(sockfd, (struct sockaddr *)&server, 
 				sizeof(server)) < 0)
 	{
 		perror("Error in binding");
@@ -49,7 +50,7 @@ int main(int argc, char const *argv[])
 			exit(1);
 		}
 
-		if(new_socket = accept(sockfd, 
+		if(clientSocket = accept(sockfd, 
 							(struct sockaddr *)&server, 
 							(socklen_t *)&addrlen) < 0)
 		{
@@ -57,10 +58,12 @@ int main(int argc, char const *argv[])
 			exit(1);
 		}
 
-		char *val = read(new_socket, buffer, 1024);
+		char *val = read(clientSocket, buffer, 1024);
 		printf("%s", buffer);
-		send(new_socket, "hello", strlen("hello"), 0);
+		send(clientSocket, "Server Response", 
+						strlen("Server Response"), 0);
 	}
 	return 0;
 }
 
+// 2553543 2
