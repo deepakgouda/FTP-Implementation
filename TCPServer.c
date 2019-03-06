@@ -8,8 +8,8 @@
 #define bufferSize 1024
 int main(int argc, char const *argv[])
 {
-	const char *serv_addr = argv[1];
-	const int serv_port = atoi(argv[2]);
+	const int serv_port = atoi(argv[1]);
+	// printf("%d\n", serv_port)
 
 	char buffer[bufferSize] = {0};
 	struct sockaddr_in server;
@@ -43,9 +43,9 @@ int main(int argc, char const *argv[])
 			exit(1);
 		}
 
-		if(clientSocket = accept(sockfd, 
-							(struct sockaddr *)&server, 
-							(socklen_t *)&addrlen) < 0)
+		if((clientSocket = accept(sockfd, 
+					(struct sockaddr *)&server, 
+					(socklen_t *)&addrlen)) < 0)
 		{
 			perror("Creation of new socket failed");
 			exit(1);

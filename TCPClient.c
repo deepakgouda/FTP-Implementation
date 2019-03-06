@@ -7,7 +7,10 @@
 #define bufferSize 1024
 int main(int argc, char const *argv[])
 {
-	int clientfd, newSocket, serv_port = atoi(argv[1]);
+	const char *serv_addr = argv[1];
+	const int serv_port = atoi(argv[2]);
+
+	int clientfd, newSocket;
 	// printf("%d\n", serv_port);
 	char buffer[bufferSize] = {0}, *cmd="Clent Request";
 
@@ -20,7 +23,7 @@ int main(int argc, char const *argv[])
 	struct sockaddr_in servaddr;
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(serv_port);
-	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	servaddr.sin_addr.s_addr = serv_addr;
 
 	if(connect(clientfd, (struct sockaddr *)&servaddr, 
 						sizeof(servaddr)) < 0)
