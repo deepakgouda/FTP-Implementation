@@ -148,10 +148,12 @@ doftp(int newsd)
         {printf("server: write error :%d\n",errno);exit(0);   }
 
   
-    req = 0;
-    if ((readn(newsd,(char *)&req,sizeof(req))) < 0)
+    req = -1;
+    recv(newsd,&req,sizeof(req), 0);
+    printf("%d\n", req);
+    if (req < 0)
        		      {printf("server: read error :%d\n",errno);exit(0);}
-    printf("server: start transfer command, %d, received\n", ntohs(req));
+    printf("server: start transfer command, %d, received\n", req);
 
    
    /*SERVER GETS FILESIZE AND CALCULATES THE NUMBER OF BLOCKS OF 
@@ -182,12 +184,11 @@ doftp(int newsd)
       printf("server: ACK not received on file size\n");
       exit(0);
       }
-    rewind(fp);    
-    
-  
-    /* ACTUAL FILE TRANSFER STARTS  BLOCK BY BLOCK*/       
-       
-  
+
+    /* ACTUAL FILE TRANSFER STARTS  BLOCK BY BLOCK*/ 
+
+
+    rewind(fp);          
   for(i= 0; i < num_blks; i ++) { 
       no_read = fread(out_buf,sizeof(char),MAXSIZE,fp);
       if (no_read == 0) {printf("server: file read error\n");exit(0);}

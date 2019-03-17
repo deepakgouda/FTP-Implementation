@@ -15,6 +15,8 @@
 /*for O_RDONLY*/
 #include<fcntl.h>
 
+#define MAXSIZE 512
+
 #define ACK                   2
 #define NACK                  3
 #define REQUESTFILE           100
@@ -23,6 +25,9 @@
 #define BADFILENAME           200
 #define FILENAMEOK            400
  
+int writen(int sd,char *ptr,int size);
+int readn(int sd,char *ptr,int size);
+
 int main(int argc,char *argv[])
 {
   struct sockaddr_in server;
@@ -77,22 +82,51 @@ int main(int argc,char *argv[])
 	      printf("No such file on the remote directory\n\n");
 	    break;
 	    }
+	  int temp = 1;
+	  writen(sock,(char *)&temp,sizeof(temp));
+	  int num_blocks, num_last_blk;
+	  recv(sock, &num_blocks, sizeof(int), 0);
+	  num_blocks = ntohs(num_blocks);
+	  printf("No of blocks to recieve: %d\n", num_blocks);
+	  temp = htons(ACK);
+	  writen(sock,(char *)&temp,sizeof(temp));
+	  recv(sock, &num_last_blk, sizeof(int), 0);
+	  num_last_blk = ntohs(num_last_blk);
+	  printf("Last block size: %d\n", num_last_blk);
+	  writen(sock,(char *)&temp,sizeof(temp));
+
+	  /* ACTUAL FILE TRANSFER STARTS  BLOCK BY BLOCK*/ 
+
+	  printf("Creating empty file...\n");
+      FILE *fp = fopen(filename, "w"); 
+      fclose(fp);
+
 	  f = malloc(size);
-	  recv(sock, f, size, 0);
-	  while(1)
-	    {
-	      filehandle = open(filename, O_CREAT | O_EXCL | O_WRONLY, 0666);
-	      if(filehandle == -1)
-		{
-		  sprintf(filename + strlen(filename), "%d", i);//needed only if same directory is used for both server and client
-		}
-	      else break;
-	    }
-	  write(filehandle, f, size, 0);
-	  close(filehandle);
+	  for(i= 0; i < num_blocks; i ++) { 
+	  	int no_read = recv(sock, f, MAXSIZE, 0);
+      if (no_read < 0) {printf("server: file recieve error\n");exit(0);}
+      if (no_read != MAXSIZE)
+              {printf("server: file recieve error : no_read is less\n");exit(0);}
+      printf(" %d...",i+1);
+      FILE *fp = fopen(filename, "a");
+      fputs(no_read, fp);
+      fclose(fp);
+      }
+
+   if (num_last_blk > 0) { 
+      int no_read = recv(sock, f, num_last_blk, 0);
+      if (no_read < 0) {printf("server: file recieve error\n");exit(0);}
+      if (no_read != num_last_blk)
+              {printf("server: file recieve error : no_read is less\n");exit(0);}
+      printf(" %d...\n",num_blocks + 1);
+      FILE *fp = fopen(filename, "a");
+      fputs(f, fp);
+      fclose(fp);
+      }
 	  strcpy(buf, "cat ");
 	  strcat(buf, filename);
 	  system(buf);
+	  printf("\n");
 	  break;
 	case 2:
 	  printf("Enter filename to put to server: ");
@@ -158,3 +192,37 @@ int main(int argc,char *argv[])
 	}
     }
 }
+
+
+/*
+  TO TAKE CARE OF THE POSSIBILITY OF BUFFER LIMMITS IN THE KERNEL FOR THE
+ SOCKET BEING REACHED (WHICH MAY CAUSE READ OR WRITE TO RETURN FEWER CHARACTERS
+  THAN REQUESTED), WE USE THE FOLLOWING TWO FUNCTIONS */  
+   
+int readn(int sd,char *ptr,int size)
+{         int no_left,no_read;
+          no_left = size;
+          while (no_left > 0) 
+                     { no_read = read(sd,ptr,no_left);
+                       if(no_read <0)  return(no_read);
+                       if (no_read == 0) break;
+                       no_left -= no_read;
+                       ptr += no_read;
+                     }
+          return(size - no_left);
+}
+
+int writen(int sd,char *ptr,int size)
+{         int no_left,no_written;
+          no_left = size;
+          while (no_left > 0) 
+                     { no_written = write(sd,ptr,no_left);
+                       if(no_written <=0)  return(no_written);
+                       no_left -= no_written;
+                       ptr += no_written;
+                     }
+          return(size - no_left);
+}
+
+
+           
