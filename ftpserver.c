@@ -33,19 +33,20 @@
 int writen(int sd,char *ptr,int size);
 int readn(int sd,char *ptr,int size);
 
-int main()
+int main(int argc, char *argv[])
 {
 	int sockid, newsd, pid, clilen;
+	const int serv_port = atoi(argv[1]);
 	struct sockaddr_in my_addr, client_addr;   
 
 	printf("server: creating socket\n");
-	if ((sockid = socket(AF_INET,SOCK_STREAM,0)) < 0)
-	 {printf("server: socket error : %d\n", errno); exit(0); }
+	if((sockid = socket(AF_INET,SOCK_STREAM,0)) < 0)
+		{printf("server: socket error : %d\n", errno); exit(0);}
 
 	printf("server: binding my local socket\n");
 	bzero((char *) &my_addr,sizeof(my_addr));
 	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(MY_PORT_ID);
+	my_addr.sin_port = htons(serv_port);
 	my_addr.sin_addr.s_addr = htons(INADDR_ANY);
 	if(bind(sockid ,(struct sockaddr *) &my_addr,sizeof(my_addr)) < 0)
 		{printf("server: bind  error :%d\n", errno); exit(0); }

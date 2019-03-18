@@ -29,15 +29,16 @@
 int writen(int sd,char *ptr,int size);
 int readn(int sd,char *ptr,int size);
 
-int main(int argc,char *argv[])
+int main(int argc, char const *argv[])
 {
 	struct sockaddr_in server;
 	struct stat obj;
-	int sock;
-	int choice;
+
+	const char *serv_addr = argv[1];
+	const int serv_port = atoi(argv[2]);
+
+	int sock, choice, k, size, status, filehandle;
 	char buf[BUFSIZE], command[5], filename[20], *f;
-	int k, size, status;
-	int filehandle;
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock == -1)
 	{
@@ -45,7 +46,7 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 	server.sin_family = AF_INET;
-	server.sin_port = htons(atoi(argv[1]));
+	server.sin_port = htons(serv_port);
 	server.sin_addr.s_addr = 0;
 	k = connect(sock,(struct sockaddr*)&server, sizeof(server));
 	if(k == -1)
