@@ -33,45 +33,45 @@
 int writen(int sd,char *ptr,int size);
 int readn(int sd,char *ptr,int size);
 
-main()  {
+int main()
+{
+	int sockid, newsd, pid, clilen;
+	struct sockaddr_in my_addr, client_addr;   
 
-	 int sockid, newsd, pid, clilen;
-	 struct sockaddr_in my_addr, client_addr;   
+	printf("server: creating socket\n");
+	if ((sockid = socket(AF_INET,SOCK_STREAM,0)) < 0)
+	 {printf("server: socket error : %d\n", errno); exit(0); }
 
-	 printf("server: creating socket\n");
-	 if ((sockid = socket(AF_INET,SOCK_STREAM,0)) < 0)
-		 {printf("server: socket error : %d\n", errno); exit(0); }
+	printf("server: binding my local socket\n");
+	bzero((char *) &my_addr,sizeof(my_addr));
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_port = htons(MY_PORT_ID);
+	my_addr.sin_addr.s_addr = htons(INADDR_ANY);
+	if(bind(sockid ,(struct sockaddr *) &my_addr,sizeof(my_addr)) < 0)
+		{printf("server: bind  error :%d\n", errno); exit(0); }
+	printf("server: starting listen \n");
+	if(listen(sockid,5) < 0)
+		{printf("server: listen error :%d\n",errno);exit(0);}                                        
 
-	 printf("server: binding my local socket\n");
-	 bzero((char *) &my_addr,sizeof(my_addr));
-	 my_addr.sin_family = AF_INET;
-	 my_addr.sin_port = htons(MY_PORT_ID);
-	 my_addr.sin_addr.s_addr = htons(INADDR_ANY);
-	 if (bind(sockid ,(struct sockaddr *) &my_addr,sizeof(my_addr)) < 0)
-		 {printf("server: bind  error :%d\n", errno); exit(0); }
-	 printf("server: starting listen \n");
-	 if (listen(sockid,5) < 0)
-		 { printf("server: listen error :%d\n",errno);exit(0);}                                        
-
-	 while(1) { 
-		 /* ACCEPT A CONNECTION AND THEN CREATE A CHILD TO DO THE WORK */
-		 /* LOOP BACK AND WAIT FOR ANOTHER CONNECTION                  */
-		 printf("server: starting accept\n");
-		 if ((newsd = accept(sockid ,(struct sockaddr *) &client_addr,
-																			&clilen)) < 0)
-				{printf("server: accept  error :%d\n", errno); exit(0); }
-				printf("server: return from accept, socket for this ftp: %d\n",
-																			 newsd);
-		 if ( (pid=fork()) == 0) {
-				 /* CHILD PROC STARTS HERE. IT WILL DO ACTUAL FILE TRANSFER */
-				 close(sockid);   /* child shouldn't do an accept */
-				 doftp(newsd);
-				 close (newsd);
-				 exit(0);         /* child all done with work */
-				 }
-			/* PARENT CONTINUES BELOW HERE */
-		 close(newsd);        /* parent all done with client, only child */
-		 }              /* will communicate with that client from now on */
+	while(1)
+	{ 
+		/* ACCEPT A CONNECTION AND THEN CREATE A CHILD TO DO THE WORK */
+		/* LOOP BACK AND WAIT FOR ANOTHER CONNECTION                  */
+		printf("server: starting accept\n");
+		if((newsd = accept(sockid ,(struct sockaddr *) &client_addr, &clilen)) < 0)
+			{printf("server: accept  error :%d\n", errno); exit(0);}
+		printf("server: return from accept, socket for this ftp: %d\n", newsd);
+		if((pid=fork()) == 0)
+		{
+			/* CHILD PROC STARTS HERE. IT WILL DO ACTUAL FILE TRANSFER */
+			close(sockid);   /* child shouldn't do an accept */
+			doftp(newsd);
+			close (newsd);
+			exit(0);         /* child all done with work */
+		}
+		/* PARENT CONTINUES BELOW HERE */
+		close(newsd);        /* parent all done with client, only child */
+	}              /* will communicate with that client from now on */
 }   
 		 
 
