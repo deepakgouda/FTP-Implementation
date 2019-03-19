@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MAXFILE 100
 #define SERVER_IP 	"127.0.0.1"
@@ -89,11 +90,18 @@ int main(int argc , char **argv)
 				// Start receiving file
 				if (strcmp(reply_msg, "OK") == 0)
 				{
+					int abortflag = 0;
+					if( access( filename, F_OK ) != -1 )
+					{
+    					printf("File already exists. Press 0 to overwrite. Press any other key to abort.\n");
+    					scanf("%d", &abortflag);
+					}
 					recv(socket_desc, &file_size, sizeof(int), 0);
 					data = malloc(file_size);
 					file_desc = open(filename, O_CREAT | O_EXCL | O_WRONLY, 0666);
 					recv(socket_desc, data, file_size, 0);
-					write(file_desc, data, file_size);
+					if(abortflag == 0)
+						write(file_desc, data, file_size);
 					close(file_desc);
 				}
 				else
