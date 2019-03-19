@@ -24,6 +24,7 @@
 #define MAXFILE 100
 #define SERVER_IP 	"127.0.0.1"
 #define SERVER_PORT 	8080
+#define FILENAME 100
 
 int SendFileOverSocket(int socket_desc, char* file_name)
 {
@@ -106,7 +107,6 @@ int main(int argc , char **argv)
 				// Get a file from server
 				strcpy(request_msg, "PUT ");
 				strcat(request_msg, filename);
-				// printf("%s\n", request_msg);
 				if (access(filename, F_OK) != -1)
 				{
 					write(socket_desc, request_msg, strlen(request_msg));
@@ -114,19 +114,11 @@ int main(int argc , char **argv)
 					if (strcmp(reply_msg, "OK") == 0)
 					{
 						SendFileOverSocket(socket_desc, filename);
-						// recv(socket_desc, &file_size, sizeof(int), 0);
-						// data = malloc(file_size);
-						// file_desc = open(filename, O_CREAT | O_EXCL | O_WRONLY, 0666);
-						// recv(socket_desc, data, file_size, 0);
-						// write(file_desc, data, file_size);
-						// close(file_desc);
 					}
 					else
 					{
 						fprintf(stderr, "Server can't create file...\n");
 					}
-					// strcpy(server_response, "OK");
-					// write(socket, server_response, strlen(server_response));
 				}
 				else
 				{

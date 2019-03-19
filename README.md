@@ -5,8 +5,8 @@ Instructions
 ============
 
 ```
-$ gcc TCPServer.c -o server
-$ ./server 8000
-$ gcc TCPClient.c -o client
-$ ./client 127.0.0.1 8000
+$ gcc server.c -lpthread -o server
+$ ./server
+$ gcc client.c -o client
+$ ./client
 ```

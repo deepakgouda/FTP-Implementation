@@ -27,57 +27,15 @@
 
 #define SERVER_PORT 8080
 #define CMD_SIZE 100
+#define MAXFILE 100
+#define FILENAME 100
 
 void* ConnectionHandler(void* socket_desc);
 char* GetFilenameFromRequest(char* request);
 bool SendFileOverSocket(int socket_desc, char* file_name);
 
-int main(int argc, char **argv)
-{
-	int     socket_desc, 
-		socket_client, 
-		*new_sock, 
-		c = sizeof(struct sockaddr_in);
-
-	struct  sockaddr_in	server, client;
-
-	// Create socket
-	socket_desc = socket(AF_INET, SOCK_STREAM, 0);
-	if (socket_desc == -1)
-	{
-		perror("Could not create socket");
-		return 1;
-	}
-
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = INADDR_ANY;
-	server.sin_port = htons(SERVER_PORT);
-
-	if (bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0)
-	{
-		perror("Bind failed");
-		return 1;
-	}
-
-	listen(socket_desc, 3);
-	
-	while (socket_client = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c))
-	{
-		pthread_t sniffer_thread;
-		new_sock = malloc(1);
-		*new_sock = socket_client;        
-		pthread_create(&sniffer_thread, NULL, ConnectionHandler, (void*) new_sock);
-		// pthread_join(sniffer_thread, NULL);
-	}
-	 
-	if (socket_client<0)
-	{
-		perror("Accept failed");
-		return 1;
-	}
-
-	return 0;
-}
+char file[MAXFILE][FILENAME];
+int fileLen = 0;
 
 int GetCommandFromRequest(char* request)
 {
@@ -109,6 +67,12 @@ int GetCommandFromRequest(char* request)
 	return 0;
 }
 
+char* GetFilenameFromRequest(char* request)
+{
+	char *file_name = strchr(request, ' ');
+	return file_name + 1;
+}
+
 void performGET(char *file_name, int socket)
 {
 	char server_response[BUFSIZ];
@@ -125,6 +89,20 @@ void performGET(char *file_name, int socket)
 		strcpy(server_response, "NO");
 		write(socket, server_response, strlen(server_response)); 
 	}
+}
+
+bool SendFileOverSocket(int socket_desc, char* file_name)
+{
+	struct stat	obj;
+	int file_desc, file_size;
+
+	stat(file_name, &obj);
+	file_desc = open(file_name, O_RDONLY);
+	file_size = obj.st_size;
+	send(socket_desc, &file_size, sizeof(int), 0);
+	sendfile(socket_desc, file_desc, NULL, file_size);
+
+	return true;
 }
 
 void *ConnectionHandler(void *socket_desc)
@@ -145,6 +123,12 @@ void *ConnectionHandler(void *socket_desc)
 			// ################### GET ###################
 				strcpy(file_name, GetFilenameFromRequest(client_request));
 				// printf("%s\n", file_name);
+				// if(isPresent(file_name))
+				// {
+				// 	printf("File %s present in server. Do you want to overwrite? 1/0 :\n", );
+				// 	int c;
+				// 	scanf("%s", &c);
+				// }
 				performGET(file_name, socket);
 				break;
 			case 2:
@@ -172,22 +156,48 @@ void *ConnectionHandler(void *socket_desc)
 	return 0;
 }
 
-char* GetFilenameFromRequest(char* request)
+
+int main(int argc, char **argv)
 {
-	char *file_name = strchr(request, ' ');
-	return file_name + 1;
-}
+	int socket_desc, socket_client, *new_sock, 
+	c = sizeof(struct sockaddr_in);
 
-bool SendFileOverSocket(int socket_desc, char* file_name)
-{
-	struct stat	obj;
-	int file_desc, file_size;
+	struct  sockaddr_in	server, client;
 
-	stat(file_name, &obj);
-	file_desc = open(file_name, O_RDONLY);
-	file_size = obj.st_size;
-	send(socket_desc, &file_size, sizeof(int), 0);
-	sendfile(socket_desc, file_desc, NULL, file_size);
+	// Create socket
+	socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+	if (socket_desc == -1)
+	{
+		perror("Could not create socket");
+		return 1;
+	}
 
-	return true;
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons(SERVER_PORT);
+
+	if (bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0)
+	{
+		perror("Bind failed");
+		return 1;
+	}
+
+	listen(socket_desc, 3);
+	
+	while (socket_client = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c))
+	{
+		pthread_t sniffer_thread;
+		new_sock = malloc(1);
+		*new_sock = socket_client;
+		pthread_create(&sniffer_thread, NULL, ConnectionHandler, (void*) new_sock);
+		// pthread_join(sniffer_thread, NULL);
+	}
+	 
+	if (socket_client<0)
+	{
+		perror("Accept failed");
+		return 1;
+	}
+
+	return 0;
 }
