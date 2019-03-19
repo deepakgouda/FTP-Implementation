@@ -1,0 +1,63 @@
+/*FTP Client*/
+ 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+ 
+/*for getting file size using stat()*/
+#include<sys/stat.h>
+ 
+/*for sendfile()*/
+#include<sys/sendfile.h>
+ 
+/*for O_RDONLY*/
+#include<fcntl.h>
+
+#define MAXSIZE 512
+
+#define ACK                   2
+#define NACK                  3
+#define REQUESTFILE           100
+#define COMMANDNOTSUPPORTED   150
+#define COMMANDSUPPORTED      160
+#define BADFILENAME           200
+#define FILENAMEOK            400
+ 
+int writen(int sd,char *ptr,int size);
+int readn(int sd,char *ptr,int size);
+
+int main(int argc,char *argv[])
+{
+  struct sockaddr_in server;
+  struct stat obj;
+  int sock;
+  int choice;
+  char buf[100], command[5], filename[20], *f;
+  int k, size, status;
+  int filehandle;
+  sock = socket(AF_INET, SOCK_STREAM, 0);
+  
+
+  //Socket Creation Failed
+  if(sock == -1)
+	{
+	  printf("socket creation failed");
+	  exit(1);
+	}
+
+  // Connect with Server  
+  server.sin_family = AF_INET;
+  server.sin_port = htons(atoi(argv[1]));
+  server.sin_addr.s_addr = 0;
+  k = connect(sock,(struct sockaddr*)&server, sizeof(server));
+  
+  // Connection with Server Failed
+  if(k == -1)
+    {
+      printf("Connect Error");
+      exit(1);
+    }
+  //Connection Established 
+
