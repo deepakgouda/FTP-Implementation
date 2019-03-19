@@ -136,10 +136,27 @@ int main(int argc , char **argv)
 
 				
 				break;
+				case 3:
+
+				MGET(socket_desc);	
+				break;
 			case 5:
+				strcpy(request_msg,"EXIT");
+				write(socket_desc, request_msg, strlen(request_msg));	
 				return 0;
 		}
 	}
 
 	return 0;
+}
+
+void MGET(int server_socket){
+
+	printf("working\n" );
+	char *request_msg="MGET txt";
+
+	char file_name[FILENAME];
+	write(server_socket, request_msg, strlen(request_msg));
+	while(recv(server_socket,file_name,BUFSIZ,0))
+
 }

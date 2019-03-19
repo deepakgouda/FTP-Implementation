@@ -24,6 +24,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <string.h>
 
 #define SERVER_PORT 8080
 #define CMD_SIZE 100
@@ -88,6 +91,8 @@ int GetCommandFromRequest(char* request)
 		return 4;
 	else if(!strcmp(cmd, "SHOW"))
 		return 5;
+	else if(!strcmp(cmd, "EXIT"))
+		return 6;
 	return 0;
 }
 
@@ -187,12 +192,42 @@ void *ConnectionHandler(void *socket_desc)
 				fileLen++;
 				break;
 			case 3:
+							strcpy(file_name, GetFilenameFromRequest(client_request));
+
+			printf("%s\n", file_name);
+			DIR *d;
+		   	char *p1,*p2;
+		    int ret;
+		    struct dirent *dir;
+		    d = opendir(".");
+		    if (d)
+		    {
+		        while ((dir = readdir(d)) != NULL)
+		        {
+		            p1=strtok(dir->d_name,".");
+		            p2=strtok(NULL,".");
+		            if(p2!=NULL)
+		            {
+		                ret=strcmp(p2,file_name);
+		                if(ret==0)
+		                {
+		                    printf("%s",p1);
+		                    
+		                }
+		            }
+
+		        }
+		        closedir(d);
+		    }
+
 				break;
 			case 4:
 				break;
 			case 5:
 				showFile(socket);
 				break;
+			case 6:
+				return 0;
 		}
 	}
 	free(socket_desc);   
