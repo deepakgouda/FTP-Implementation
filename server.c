@@ -37,6 +37,28 @@ bool SendFileOverSocket(int socket_desc, char* file_name);
 char file[MAXFILE][FILENAME];
 int fileLen = 0;
 
+void showFile(int socket)
+{
+	char ch = '\0';
+	char server_response[1];
+	strcpy(server_response, &ch);
+	if(!fileLen)
+		write(socket, server_response, strlen(server_response));
+
+	char allFiles[MAXFILE*FILENAME];
+	strcpy(allFiles, file[0]);
+	ch = ' ';
+	for (int i = 1; i < fileLen; ++i)
+	{
+		strcat(allFiles, &ch);
+		strcat(allFiles, file[i]);
+	}
+	ch = '\0';
+	strcat(allFiles, &ch);
+	write(socket, server_response, strlen(server_response));
+	printf("\n");
+}
+
 int GetCommandFromRequest(char* request)
 {
 	printf("%s\n", request);
@@ -49,7 +71,7 @@ int GetCommandFromRequest(char* request)
 	}
 
 	if(request[i] == '\0')
-		return 5;
+		return 0;
 	else
 	{
 		strncpy(cmd, request, i-1);
@@ -64,6 +86,18 @@ int GetCommandFromRequest(char* request)
 		return 3;
 	else if(!strcmp(cmd, "MPUT"))
 		return 4;
+	else if(!strcmp(cmd, "SHOW"))
+		return 5;
+	return 0;
+}
+
+int isPresent(char *file_name)
+{
+	for (int i = 0; i < fileLen; ++i)
+	{
+		if(!strcmp(file[i], file_name))
+			return 1;
+	}
 	return 0;
 }
 
@@ -124,31 +158,40 @@ void *ConnectionHandler(void *socket_desc)
 				strcpy(file_name, GetFilenameFromRequest(client_request));
 				// printf("%s\n", file_name);
 				// if(isPresent(file_name))
-				// {
-				// 	printf("File %s present in server. Do you want to overwrite? 1/0 :\n", );
-				// 	int c;
-				// 	scanf("%s", &c);
-				// }
+				
 				performGET(file_name, socket);
 				break;
 			case 2:
 			// ################### PUT ###################
 				// Add check conditions
-				strcpy(server_response, "OK");
-				write(socket, server_response, strlen(server_response));
+				// strcpy(server_response, "OK");
+				// write(socket, server_response, strlen(server_response));
 				strcpy(file_name, GetFilenameFromRequest(client_request));
+
+				if (access(file_name, F_OK) != -1)
+				{
+					int c;
+					strcpy(server_response, "FP");
+					write(socket, server_response, strlen(server_response));
+					recv(socket, &c, sizeof(int), 0);
+					if(!c)
+						break;
+				}
 				recv(socket, &file_size, sizeof(int), 0);
 				data = malloc(file_size);
 				file_desc = open(file_name, O_CREAT | O_EXCL | O_WRONLY, 0666);
 				recv(socket, data, file_size, 0);
 				write(file_desc, data, file_size);
 				close(file_desc);
+				strcpy(file[fileLen], file_name);
+				fileLen++;
 				break;
 			case 3:
 				break;
 			case 4:
 				break;
 			case 5:
+				showFile(socket);
 				break;
 		}
 	}
