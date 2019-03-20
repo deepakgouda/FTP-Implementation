@@ -5,11 +5,17 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
- correct file
+ 
+/*for getting file size using stat()*/
+#include<sys/stat.h>
+ 
+/*for sendfile()*/
+#include<sys/sendfile.h>
+ 
 /*for O_RDONLY*/
 #include<fcntl.h>
 
-#define MAXSIZE gouda
+#define MAXSIZE 512
 
 #define ACK                   2
 #define NACK                  3
@@ -55,5 +61,3 @@ int main(int argc,char *argv[])
     }
   //Connection Established 
 
-;
-  sock 5

@@ -74,7 +74,7 @@ int GetCommandFromRequest(char* request)
 	}
 
 	if(request[i] == '\0')
-		return 6;
+		return 0;
 	else
 	{
 		strncpy(cmd, request, i-1);
@@ -144,50 +144,18 @@ bool SendFileOverSocket(int socket_desc, char* file_name)
 	return true;
 }
 
-
-void performPUT(char *file_name, int socket)
-{
-	printf("HELLO\n");
-	char server_response[BUFSIZ], client_response[BUFSIZ];
-	if(access(file_name, F_OK) != -1)
-	{
-		int c;
-		strcpy(server_response, "FP");
-		write(socket, server_response, strlen(server_response));
-		recv(socket, client_response, 1, 0);
-		if(!strcmp(client_response, "N"))
-			return;
-	}
-	else
-	{
-		strcpy(server_response, "OK");
-		write(socket, server_response, strlen(server_response));
-	}
-	int file_size;
-	char *data;
-	recv(socket, &file_size, sizeof(int), 0);
-	data = malloc(file_size);
-	FILE *fp = fopen(file_name, "w");
-	// file_desc = open(file_name, O_CREAT | O_EXCL | O_WRONLY, 0666);
-	int t = recv(socket, data, file_size, 0);
-	t = fputs(data, fp);
-	fclose(fp);
-	strcpy(file[fileLen], file_name);
-	fileLen++;
-}
-
 void *ConnectionHandler(void *socket_desc)
 {
 	int	choice, file_desc, file_size;
 	int socket = *(int*)socket_desc;
 					int file_name_size=0;
 
-	char file_ext[BUFSIZ],server_response[BUFSIZ], client_request[BUFSIZ], file_name[BUFSIZ];
+	char server_response[BUFSIZ], client_request[BUFSIZ], file_name[BUFSIZ];
 	char *data;
 	while(1)
-	{	printf("Waiting got request\n");
-		int l = recv(socket, client_request, BUFSIZ, 0);
-			printf("%d\n",l );
+	{
+		recv(socket, client_request, BUFSIZ, 0);
+
 		choice = GetCommandFromRequest(client_request);
 		printf("%d\n", choice);
 		switch(choice)
@@ -206,18 +174,37 @@ void *ConnectionHandler(void *socket_desc)
 				// strcpy(server_response, "OK");
 				// write(socket, server_response, strlen(server_response));
 				strcpy(file_name, GetFilenameFromRequest(client_request));
-				performPUT(file_name, socket);
+
+				if (access(file_name, F_OK) != -1)
+				{
+					int c;
+					strcpy(server_response, "FP");
+					write(socket, server_response, strlen(server_response));
+					recv(socket, &c, sizeof(int), 0);
+					if(!c)
+						break;
+				}
+				recv(socket, &file_size, sizeof(int), 0);
+				data = malloc(file_size);
+				file_desc = open(file_name, O_CREAT | O_EXCL | O_WRONLY, 0666);
+				recv(socket, data, file_size, 0);
+				write(file_desc, data, file_size);
+				close(file_desc);
+				strcpy(file[fileLen], file_name);
+				fileLen++;
 				break;
 			case 3:
-			strcpy(file_ext, GetFilenameFromRequest(client_request));
-			printf("%s\n", file_ext);
+							strcpy(file_name, GetFilenameFromRequest(client_request));
+
+			printf("%s\n", file_name);
 			DIR *d;
 		   	char *p1,*p2;
 		    int ret;
 		    char file[BUFSIZ];
 		    struct dirent *dir;
 		    d = opendir(".");
-		    int file_name_size=0;
+		    				int file_name_size=0;
+
 		    char reply[100],full_name[100];
 		    if (d)
 		    {
@@ -226,31 +213,29 @@ void *ConnectionHandler(void *socket_desc)
 		        	strcpy(full_name,dir->d_name);
 		            p1=strtok(dir->d_name,".");
 		            p2=strtok(NULL,".");
-		            if(p2!=NULL && strcmp(p2,file_ext)==0)
+		            if(p2!=NULL && strcmp(p2,file_name)==0)
 		            {
 		     
-		                    //int size = strlen(full_name);
+		                    int size = strlen(full_name);
 		                    strcpy(file,full_name);
-		                    //write(socket, &size,sizeof(int));
+		                    write(socket, &size,sizeof(int));
 		                    printf("%s\n",full_name );
-		             		//recv(socket, reply, 2, 0);
+		             		recv(socket, reply, 2, 0);
 		                    printf("%s\n",reply);
 
-							write(socket, full_name, strlen(full_name));
+							write(socket, file, strlen(file));
              				char reply[100];
-             				int t = recv(socket, reply, 2, 0);
-             				printf("%d\n",t );
-             				printf("%s\n",reply );
-             				if(!strcmp(reply,"OK"))
-								performGET(file,socket);
-		              }
+             				recv(socket, reply, 2, 0);
+
+
+		                }
 		            
 
 		        }
 		        strcpy(server_response,"END");
                 int size = strlen(server_response);
-                	printf("%s\n",server_response );
-                //write(socket, &size,sizeof(int));
+
+                write(socket, &size,sizeof(int));
 
 					write(socket, server_response, strlen(server_response));
              		recv(socket, reply, 2, 0);
@@ -269,12 +254,7 @@ void *ConnectionHandler(void *socket_desc)
 				if(strcmp(file_name,"END")==0)
 					break;
 				printf("%s\n", file_name);
-
-				recv(socket, client_request, BUFSIZ, 0);
-
-		strcpy(file_name, GetFilenameFromRequest(client_request));
-
-				performPUT(file_name,socket);
+				//	PerformPUT(server_socket,file_name);
 
 
 			}
@@ -285,8 +265,6 @@ void *ConnectionHandler(void *socket_desc)
 				showFile(socket);
 				break;
 			case 6:
-				free(socket_desc);   
-
 				return 0;
 		}
 	}
@@ -328,7 +306,7 @@ int main(int argc, char **argv)
 		new_sock = malloc(1);
 		*new_sock = socket_client;
 		pthread_create(&sniffer_thread, NULL, ConnectionHandler, (void*) new_sock);
-		 pthread_join(sniffer_thread, NULL);
+		// pthread_join(sniffer_thread, NULL);
 	}
 	 
 	if (socket_client<0)
