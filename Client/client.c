@@ -57,7 +57,9 @@ void performPUT(int socket_desc, char *filename)
 	printf("%s\n",filename );
 	if (access(filename, F_OK) != -1)
 	{
-		write(socket_desc, request_msg, strlen(request_msg));
+		printf("%s\n",request_msg );
+		int t = write(socket_desc, request_msg, strlen(request_msg));
+		printf("%d\n",t );
 		recv(socket_desc, reply_msg, 2, 0);
 		printf("%s\n", reply_msg);
 		if (strcmp(reply_msg, "OK") == 0)
@@ -78,6 +80,7 @@ void performPUT(int socket_desc, char *filename)
 			}
 			else
 			{
+				printf("NO OVERRIDE\n");
 				strcpy(client_response, "N");
 				write(socket_desc, client_response, strlen(client_response));
 				return;

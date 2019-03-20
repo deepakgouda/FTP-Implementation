@@ -155,6 +155,8 @@ void performPUT(char *file_name, int socket)
 		strcpy(server_response, "FP");
 		write(socket, server_response, strlen(server_response));
 		recv(socket, client_response, 1, 0);
+		printf("%s\n", client_response);
+		client_response[1]='\0';
 		if(!strcmp(client_response, "N"))
 			return;
 	}
