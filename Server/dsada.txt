@@ -1,0 +1,1 @@
+	int l = write(socket_desc, request_msg, strlen(request_msg));	int l = write(socket_desc, request_msg, strlen(request_msg));	int l = write(socket_desc, request_msg, strlen(request_msg));	int l = write(socket_desc, request_msg, strlen(request_msg));

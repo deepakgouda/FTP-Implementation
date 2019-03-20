@@ -1,18 +1,4 @@
-/*
- *  server.c
- *
- *  Simple FTP Server
- *  ====================
- *  If the client connects to the server and wants to retrieve a file
- *  with command "Get FILENAME", server retrieves iff the file exists
- *  on the server o/w notifies the client with an error message.
- *
- *  Compile & link  :   gcc server.c -lpthread -o server
- *  Execute         :   ./server
- *
- *  Ozcan Ovunc <ozcan_ovunc@hotmail.com>
- */
-
+//  server.c
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -33,268 +19,12 @@
 #define MAXFILE 100
 #define FILENAME 100
 
-void* ConnectionHandler(void* socket_desc);
-char* GetFilenameFromRequest(char* request);
+
+
+
+void *ConnectionHandler(void *socket_desc);
+char* GetArgumentFromRequest(char* request);
 bool SendFileOverSocket(int socket_desc, char* file_name);
-
-char file[MAXFILE][FILENAME];
-int fileLen = 0;
-
-void showFile(int socket)
-{
-	char ch = '\0';
-	char server_response[1];
-	strcpy(server_response, &ch);
-	if(!fileLen)
-		write(socket, server_response, strlen(server_response));
-
-	char allFiles[MAXFILE*FILENAME];
-	strcpy(allFiles, file[0]);
-	ch = ' ';
-	for (int i = 1; i < fileLen; ++i)
-	{
-		strcat(allFiles, &ch);
-		strcat(allFiles, file[i]);
-	}
-	ch = '\0';
-	strcat(allFiles, &ch);
-	write(socket, server_response, strlen(server_response));
-	printf("\n");
-}
-
-int GetCommandFromRequest(char* request)
-{
-	printf("%s\n", request);
-	char cmd[CMD_SIZE];
-	strcpy(cmd, request);
-	int i = 0;
-	while(request[i] != ' ' && request[i] != '\0')
-	{
-		i++;
-	}
-
-	if(request[i] == '\0')
-		return 6;
-	else
-	{
-		strncpy(cmd, request, i-1);
-		cmd[i] = '\0';
-	}
-		
-	if(!strcmp(cmd, "GET"))
-		return 1;
-	else if(!strcmp(cmd, "PUT"))
-		return 2;
-	else if(!strcmp(cmd, "MGET"))
-		return 3;
-	else if(!strcmp(cmd, "MPUT"))
-		return 4;
-	else if(!strcmp(cmd, "SHOW"))
-		return 5;
-	else if(!strcmp(cmd, "EXIT"))
-		return 6;
-	return 0;
-}
-
-int isPresent(char *file_name)
-{
-	for (int i = 0; i < fileLen; ++i)
-	{
-		if(!strcmp(file[i], file_name))
-			return 1;
-	}
-	return 0;
-}
-
-char* GetFilenameFromRequest(char* request)
-{
-	char *file_name = strchr(request, ' ');
-	return file_name + 1;
-}
-
-void performGET(char *file_name, int socket)
-{
-	char server_response[BUFSIZ];
-	// If requested file exists, notify the client and send it
-	if (access(file_name, F_OK) != -1)
-	{
-		strcpy(server_response, "OK");
-		write(socket, server_response, strlen(server_response));
-		SendFileOverSocket(socket, file_name);
-	}
-	else
-	{
-		// Requested file does not exist, notify the client
-		strcpy(server_response, "NO");
-		write(socket, server_response, strlen(server_response)); 
-	}
-}
-
-bool SendFileOverSocket(int socket_desc, char* file_name)
-{
-	struct stat	obj;
-	int file_desc, file_size;
-
-	stat(file_name, &obj);
-	file_desc = open(file_name, O_RDONLY);
-	file_size = obj.st_size;
-	send(socket_desc, &file_size, sizeof(int), 0);
-	sendfile(socket_desc, file_desc, NULL, file_size);
-
-	return true;
-}
-
-
-void performPUT(char *file_name, int socket)
-{
-	printf("HELLO\n");
-	char server_response[BUFSIZ], client_response[BUFSIZ];
-	if(access(file_name, F_OK) != -1)
-	{
-		int c;
-		strcpy(server_response, "FP");
-		write(socket, server_response, strlen(server_response));
-		recv(socket, client_response, 1, 0);
-		printf("%s\n", client_response);
-		client_response[1]='\0';
-		if(!strcmp(client_response, "N"))
-			return;
-	}
-	else
-	{
-		strcpy(server_response, "OK");
-		write(socket, server_response, strlen(server_response));
-	}
-	int file_size;
-	char *data;
-	recv(socket, &file_size, sizeof(int), 0);
-	data = malloc(file_size);
-	FILE *fp = fopen(file_name, "w");
-	// file_desc = open(file_name, O_CREAT | O_EXCL | O_WRONLY, 0666);
-	int t = recv(socket, data, file_size, 0);
-	t = fputs(data, fp);
-	fclose(fp);
-	strcpy(file[fileLen], file_name);
-	fileLen++;
-}
-
-void *ConnectionHandler(void *socket_desc)
-{
-	int	choice, file_desc, file_size;
-	int socket = *(int*)socket_desc;
-					int file_name_size=0;
-
-	char file_ext[BUFSIZ],server_response[BUFSIZ], client_request[BUFSIZ], file_name[BUFSIZ];
-	char *data;
-	while(1)
-	{	printf("Waiting got request\n");
-		int l = recv(socket, client_request, BUFSIZ, 0);
-			printf("%d\n",l );
-		choice = GetCommandFromRequest(client_request);
-		printf("%d\n", choice);
-		switch(choice)
-		{
-			case 1:
-			// ################### GET ###################
-				strcpy(file_name, GetFilenameFromRequest(client_request));
-				// printf("%s\n", file_name);
-				// if(isPresent(file_name))
-				
-				performGET(file_name, socket);
-				break;
-			case 2:
-			// ################### PUT ###################
-				// Add check conditions
-				// strcpy(server_response, "OK");
-				// write(socket, server_response, strlen(server_response));
-				strcpy(file_name, GetFilenameFromRequest(client_request));
-				performPUT(file_name, socket);
-				break;
-			case 3:
-			strcpy(file_ext, GetFilenameFromRequest(client_request));
-			printf("%s\n", file_ext);
-			DIR *d;
-		   	char *p1,*p2;
-		    int ret;
-		    char file[BUFSIZ];
-		    struct dirent *dir;
-		    d = opendir(".");
-		    int file_name_size=0;
-		    char reply[100],full_name[100];
-		    if (d)
-		    {
-		        while ((dir = readdir(d)) != NULL)
-		        {
-		        	strcpy(full_name,dir->d_name);
-		            p1=strtok(dir->d_name,".");
-		            p2=strtok(NULL,".");
-		            if(p2!=NULL && strcmp(p2,file_ext)==0)
-		            {
-		     
-		                    //int size = strlen(full_name);
-		                    strcpy(file,full_name);
-		                    //write(socket, &size,sizeof(int));
-		                    printf("%s\n",full_name );
-		             		//recv(socket, reply, 2, 0);
-		                    printf("%s\n",reply);
-
-							write(socket, full_name, strlen(full_name));
-             				char reply[100];
-             				int t = recv(socket, reply, 2, 0);
-             				printf("%d\n",t );
-             				printf("%s\n",reply );
-             				if(!strcmp(reply,"OK"))
-								performGET(file,socket);
-		              }
-		            
-
-		        }
-		        strcpy(server_response,"END");
-                int size = strlen(server_response);
-                	printf("%s\n",server_response );
-                //write(socket, &size,sizeof(int));
-
-					write(socket, server_response, strlen(server_response));
-             		recv(socket, reply, 2, 0);
-
-		        closedir(d);
-		    }
-
-				break;
-			case 4:
-			while(1){
-				recv(socket,&file_name_size,sizeof(int),0);
-				write(socket,reply,2);
-				recv(socket,file_name,file_name_size,0);
-				file_name[file_name_size]='\0';
-				write(socket,reply,2);
-				if(strcmp(file_name,"END")==0)
-					break;
-				printf("%s\n", file_name);
-
-				recv(socket, client_request, BUFSIZ, 0);
-
-		strcpy(file_name, GetFilenameFromRequest(client_request));
-
-				performPUT(file_name,socket);
-
-
-			}
-			printf("Complete\n");
-
-				break;
-			case 5:
-				showFile(socket);
-				break;
-			case 6:
-				free(socket_desc);   
-
-				return 0;
-		}
-	}
-	free(socket_desc);   
-	return 0;
-}
 
 
 int main(int argc, char **argv)
@@ -341,3 +71,270 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+
+
+void showFile(int socket)
+{
+	/*
+	char ch = '\0';
+	char server_response[1];
+	strcpy(server_response, &ch);
+	if(!fileLen)
+		write(socket, server_response, strlen(server_response));
+
+	char allFiles[MAXFILE*FILENAME];
+	strcpy(allFiles, file[0]);
+	ch = ' ';
+	for (int i = 1; i < fileLen; ++i)
+	{
+		strcat(allFiles, &ch);
+		strcat(allFiles, file[i]);
+	}
+	ch = '\0';
+	strcat(allFiles, &ch);
+	write(socket, server_response, strlen(server_response));
+	printf("\n");
+*/	
+}
+
+int GetCommandFromRequest(char* request)
+{
+	char cmd[CMD_SIZE];
+	strcpy(cmd, request);
+	int i = 0;
+	while(request[i] != ' ' && request[i] != '\0')
+		i++;
+	if(request[i] == '\0')
+		return 6;
+	else
+	{
+		strncpy(cmd, request, i-1);
+		cmd[i] = '\0';
+	}
+		
+	if(!strcmp(cmd, "GET"))
+		return 1;
+	else if(!strcmp(cmd, "PUT"))
+		return 2;
+	else if(!strcmp(cmd, "MGET"))
+		return 3;
+	else if(!strcmp(cmd, "MPUT"))
+		return 4;
+	else if(!strcmp(cmd, "SHOW"))
+		return 5;
+	else if(!strcmp(cmd, "EXIT"))
+		return 6;
+	return 0;
+}
+
+
+void performGET(char *file_name, int socket)
+{
+	char server_response[BUFSIZ];
+	printf("Performing GET request of client\n");
+
+	// Check if file present
+	if (access(file_name, F_OK) != -1)
+	{
+		//File is present on server
+		//Send "OK" message
+		strcpy(server_response, "OK");
+		write(socket, server_response, strlen(server_response));
+		
+		//Send File
+		SendFileOverSocket(socket, file_name);
+	}
+	else
+	{
+
+		printf("File not present at server.ABORTING.\n");
+
+		// Requested file does not exist, notify the client
+		strcpy(server_response, "NO");
+		write(socket, server_response, strlen(server_response)); 
+	}
+}
+
+void performPUT(char *file_name, int socket)
+{
+	int c,r;
+	printf("Performing PUT request of client\n");
+
+	char server_response[BUFSIZ], client_response[BUFSIZ];
+	if(access(file_name, F_OK) != -1)
+	{
+		// Notifing client that file is present at server
+		strcpy(server_response, "FP");
+		write(socket, server_response, strlen(server_response));
+		
+		// Getting the users choice to override or not 
+		r = recv(socket, client_response, BUFSIZ, 0);
+		client_response[r]='\0';
+
+		if(!strcmp(client_response, "N")){
+			printf("User says don't overwrite\n");
+			return;
+		}
+		printf("User says to overwrite the file.\n");
+
+	}
+	else
+	{
+		// Send acknowledgement "OK"
+		strcpy(server_response, "OK");
+		write(socket, server_response, strlen(server_response));
+	}
+
+
+
+	// Getting File 
+	
+	int file_size;
+	char *data;
+	// Recieving file size and allocating memory
+	recv(socket, &file_size, sizeof(int), 0);
+	data = malloc(file_size);
+
+	// Creating a new file, receiving and storing data in the file.
+	FILE *fp = fopen(file_name, "w");
+	r = recv(socket, data, file_size, 0);
+	printf("Size of file recieved is %d\n",r);
+	r = fputs(data, fp);
+	fclose(fp);
+}
+void performMGET(int socket,char* file_ext){
+
+	printf("Performing MGET request of client\n");
+	DIR *d;
+  	char *p1,*p2;
+    int ret;
+    char server_response[BUFSIZ],reply[BUFSIZ];
+
+    struct dirent *dir;
+    d = opendir(".");
+    char full_name[BUFSIZ];
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+        	strcpy(full_name,dir->d_name);
+            p1=strtok(dir->d_name,".");
+            p2=strtok(NULL,".");
+            if(p2!=NULL && strcmp(p2,file_ext)==0)
+            {
+
+					write(socket, full_name, strlen(full_name));
+     				int t = recv(socket, reply, 2, 0);
+     				if(!strcmp(reply,"OK"))
+						performGET(full_name,socket);
+            }
+        }
+        closedir(d);
+
+        // End MGET Request by sending "END"
+        strcpy(server_response,"END");
+        write(socket, server_response, strlen(server_response));
+    }
+}
+/*
+
+
+// this function is not needed
+// MPUT request consists of Multiple PUT requests
+
+void performMPUT(int socket){
+	int file_name_size;
+	char reply[BUFSIZ],file_name[BUFSIZ],client_request[BUFSIZ];	
+	while(1){
+			recv(socket,&file_name_size,sizeof(int),0);
+			write(socket,reply,2);
+			recv(socket,file_name,file_name_size,0);
+			file_name[file_name_size]='\0';
+			write(socket,reply,2);
+			if(strcmp(file_name,"END")==0)
+				break;
+			printf("%s\n", file_name);
+
+			recv(socket, client_request, BUFSIZ, 0);
+
+		strcpy(file_name, GetArgumentFromRequest(client_request));
+
+			performPUT(file_name,socket);
+
+
+		}
+		printf("Complete\n");
+
+}
+*/
+
+
+// Callback when a new connection is set up
+void *ConnectionHandler(void *socket_desc)
+{
+	int	choice, file_desc, file_size;
+	int socket = *(int*)socket_desc;
+
+	char reply[BUFSIZ], file_ext[BUFSIZ],server_response[BUFSIZ], client_request[BUFSIZ], file_name[BUFSIZ];
+	char *data;
+	while(1)
+	{	printf("\nWaiting for command\n");
+		int l = recv(socket, client_request, BUFSIZ, 0);
+		client_request[l]='\0';
+		printf("Command Recieved %s\n",client_request );
+		choice = GetCommandFromRequest(client_request);
+		switch(choice)
+		{
+			case 1:
+				strcpy(file_name, GetArgumentFromRequest(client_request));
+				performGET(file_name, socket);
+				break;
+			case 2:
+				strcpy(file_name, GetArgumentFromRequest(client_request));
+				performPUT(file_name, socket);
+				break;
+			case 3:
+				strcpy(file_ext, GetArgumentFromRequest(client_request));
+				performMGET(socket,file_ext);
+				break;
+			case 4:
+				//	performMPUT(socket);
+				break;
+			case 5:
+				showFile(socket);
+				break;
+			case 6:
+				free(socket_desc);   
+				return 0;
+		}
+	}
+	free(socket_desc);   
+	return 0;
+}
+
+char* GetArgumentFromRequest(char* request)
+{
+	char *arg = strchr(request, ' ');
+	return arg + 1;
+}
+
+bool SendFileOverSocket(int socket_desc, char* file_name)
+{
+	struct stat	obj;
+	int file_desc, file_size;
+
+	printf("Sending File...\n");
+	stat(file_name, &obj);
+
+	// Open file
+	file_desc = open(file_name, O_RDONLY);
+	// Send file size
+	file_size = obj.st_size;
+	write(socket_desc, &file_size, sizeof(int));
+	// Send File
+	sendfile(socket_desc, file_desc, NULL, file_size);
+
+	printf("File %s sent\n",file_name);
+	return true;
+}
+
