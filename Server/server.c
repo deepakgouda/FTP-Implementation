@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SERVER_PORT 8080
+//#define SERVER_PORT 8080
 #define CMD_SIZE 100
 #define MAXFILE 100
 #define FILENAME 100
@@ -29,6 +29,12 @@ bool SendFileOverSocket(int socket_desc, char* file_name);
 
 int main(int argc, char **argv)
 {
+
+	if(argc!=2){
+		printf("Invalid arguments\n");
+		return 0;
+	}
+
 	int socket_desc, socket_client, *new_sock, 
 	c = sizeof(struct sockaddr_in);
 
@@ -41,7 +47,7 @@ int main(int argc, char **argv)
 		perror("Could not create socket");
 		return 1;
 	}
-
+	int SERVER_PORT = atoi(argv[1]);
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port = htons(SERVER_PORT);

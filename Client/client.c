@@ -15,8 +15,8 @@
 #include <string.h>
 
 #define MAXFILE 100
-#define SERVER_IP 	"127.0.0.1"
-#define SERVER_PORT 	8080
+//#define SERVER_IP 	"127.0.0.1"
+//#define SERVER_PORT 	8080
 #define FILENAME 100
 
 
@@ -30,6 +30,12 @@ void performMPUT(int server_socket);
 
 int main(int argc , char **argv)
 {
+
+
+	if(argc!=3){
+		printf("Invalid arguments\n");
+		return 0;
+	}
 	int socket_desc;
 	struct sockaddr_in server;
 	char request_msg[BUFSIZ], reply_msg[BUFSIZ], file_name[BUFSIZ];
@@ -41,6 +47,10 @@ int main(int argc , char **argv)
 		return 1;
 	}
 
+	char SERVER_IP[BUFSIZ];
+	int SERVER_PORT;
+	strcpy(SERVER_IP,argv[1]);
+	SERVER_PORT=atoi(argv[2]);
 	server.sin_addr.s_addr = inet_addr(SERVER_IP);
 	server.sin_family = AF_INET;
 	server.sin_port = htons(SERVER_PORT);
