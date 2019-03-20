@@ -128,7 +128,7 @@ void performGET(char *file_name,int socket_desc){
 	strcat(request_msg, file_name);
 	write(socket_desc, request_msg, strlen(request_msg));
 	recv(socket_desc, reply_msg, 2, 0);
-	
+	reply_msg[2] = '\0';
 	printf("%s\n", reply_msg);
 	if (strcmp(reply_msg, "OK") == 0)
 	{
