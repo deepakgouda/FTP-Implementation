@@ -1,4 +1,19 @@
-//  server.c
+/* 
+*  The following code is part of IITG CS349 Lab course.
+*  It implements a simple File Transfer Protocol and 		
+*  offers the functionality of GET (Get file from server)		
+*  PUT (Put local file in server), MGET (Get all files of 		
+*  given extension from server) and MPUT (Put all files of 		
+*  given extension to server).		
+*
+*  Instructions : $ gcc server.c -lpthread -o server
+				  $ ./server <SERVER_PORT>
+*  Contributors:		
+*  Akul Agrawal 		: akulagrawalll@gmail.com		
+*  Deepak Kumar Gouda   : deepakgouda1729@gmail.com		
+*  Yash Kothari			: yashkothari1729@gmail.com		
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -14,7 +29,6 @@
 #include <stdio.h>
 #include <string.h>
 
-//#define SERVER_PORT 8080
 #define CMD_SIZE 100
 #define MAXFILE 100
 #define FILENAME 100
@@ -76,31 +90,6 @@ int main(int argc, char **argv)
 	}
 
 	return 0;
-}
-
-
-void showFile(int socket)
-{
-	/*
-	char ch = '\0';
-	char server_response[1];
-	strcpy(server_response, &ch);
-	if(!fileLen)
-		write(socket, server_response, strlen(server_response));
-
-	char allFiles[MAXFILE*FILENAME];
-	strcpy(allFiles, file[0]);
-	ch = ' ';
-	for (int i = 1; i < fileLen; ++i)
-	{
-		strcat(allFiles, &ch);
-		strcat(allFiles, file[i]);
-	}
-	ch = '\0';
-	strcat(allFiles, &ch);
-	write(socket, server_response, strlen(server_response));
-	printf("\n");
-*/	
 }
 
 int GetCommandFromRequest(char* request)
@@ -192,18 +181,18 @@ void performPUT(char *file_name, int socket)
 	}
 
 
-
 	// Getting File 
 	
 	int file_size;
 	char *data;
 	// Recieving file size and allocating memory
 	recv(socket, &file_size, sizeof(int), 0);
-	data = malloc(file_size);
+	data = malloc(file_size+1);
 
 	// Creating a new file, receiving and storing data in the file.
 	FILE *fp = fopen(file_name, "w");
 	r = recv(socket, data, file_size, 0);
+	data[r] = '\0';
 	printf("Size of file recieved is %d\n",r);
 	r = fputs(data, fp);
 	fclose(fp);
@@ -307,7 +296,7 @@ void *ConnectionHandler(void *socket_desc)
 				//	performMPUT(socket);
 				break;
 			case 5:
-				showFile(socket);
+				// showFile(socket);
 				break;
 			case 6:
 				free(socket_desc);   

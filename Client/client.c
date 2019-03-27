@@ -1,4 +1,18 @@
-//	  client.c
+/* 
+*  The following code is part of IITG CS349 Lab course.
+*  It implements a simple File Transfer Protocol and 		
+*  offers the functionality of GET (Get file from server)		
+*  PUT (Put local file in server), MGET (Get all files of 		
+*  given extension from server) and MPUT (Put all files of 		
+*  given extension to server).		
+*
+*  Instructions : $ gcc client.c -o client
+				  $ ./client <SERVER_IP> <SERVER_PORT>  		
+*  Contributors:		
+*  Akul Agrawal 		: akulagrawalll@gmail.com		
+*  Deepak Kumar Gouda   : deepakgouda1729@gmail.com		
+*  Yash Kothari			: yashkothari1729@gmail.com		
+*/
 
 #include <stdio.h>
 #include <sys/socket.h> 
@@ -15,8 +29,6 @@
 #include <string.h>
 
 #define MAXFILE 100
-//#define SERVER_IP 	"127.0.0.1"
-//#define SERVER_PORT 	8080
 #define FILENAME 100
 
 
@@ -137,9 +149,10 @@ void performGET(char *file_name,int socket_desc){
 		printf("Recieving data\n");
 	
 		recv(socket_desc, &file_size, sizeof(int), 0);
-		data = malloc(file_size);
+		data = malloc(file_size+1);
 		FILE *fp = fopen(file_name, "w"); 
 		t = recv(socket_desc, data, file_size, 0);
+		data[t] = '\0';
 		fputs(data, fp);
 		fclose(fp);
 		printf("File %s recieved with size %d \n", file_name,t);
@@ -254,9 +267,10 @@ void performMGET(int socket_desc){
 		
 			// Recieving file size, creating file, getting data and writing in file.
 			recv(socket_desc, &file_size, sizeof(int), 0);
-			data = malloc(file_size);
+			data = malloc(file_size+1);
 			FILE *fp = fopen(file_name, "w"); 
 			r = recv(socket_desc, data, file_size, 0);
+			data[r] = '\0';
 			fputs(data, fp);
 			fclose(fp);
 			printf("File %s received with size %d\n", file_name,r);
